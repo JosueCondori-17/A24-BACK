@@ -9,7 +9,7 @@ use App\Http\Controllers\OfertaController;
 use App\Http\Controllers\ProductoController;
 
 //API´S para la tabla Categoria
-Route::get('categorias', [CategoriaController::class, 'index']);
+Route::get('categorias', [CategoriaController::class, 'mostrar']);
 Route::get('categorias/{id}', [CategoriaController::class, 'show']);
 Route::post('categorias', [CategoriaController::class, 'store']);
 Route::put('categorias/{id}', [CategoriaController::class, 'update']);
