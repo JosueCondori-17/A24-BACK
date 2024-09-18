@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Producto;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -15,11 +16,6 @@ class ProductoController extends Controller
     {
         try {
             $productos = Producto::all();
-            foreach ($productos as $producto) {
-                if ($producto->imagen) {
-                    $producto->imagen = url('storage/' . $producto->imagen);
-                }
-            }
             return response()->json($productos);
         } catch (Exception $e) {
             return response()->json(["error" => "ERROR AL TRAER PRODUCTOS"], 400);
@@ -30,9 +26,6 @@ class ProductoController extends Controller
     {
         try {
             $producto = Producto::findOrFail($id);
-            if ($producto->imagen) {
-                $producto->imagen = url('storage/' . $producto->imagen);
-            }
             return response()->json($producto);
         } catch (Exception $e) {
             return response()->json(["error" => "ERROR AL TRAER PRODUCTO"], 400);
@@ -51,20 +44,23 @@ class ProductoController extends Controller
                 'nombre_categoria' => 'required|string|max:255'
             ]);
 
-            $data = $request->all();
+            $producto = Producto::create([
+                'id_categoria' => $request -> id_categoria,
+                'nombre' =>  $request -> nombre,
+                'precio' =>  $request -> precio,
+                'stock' =>  $request -> stock,
+                'nombre_categoria' =>  $request -> nombre_categoria
+            ]);
 
             if ($request->hasFile('imagen')) {
-                $path = $request->file('imagen')->store('images', 'public');
-                $data['imagen'] = $path;
+                $fechaActual = Carbon::now()->format("Y-m-d-H-i-s-u");
+                $imageName = $fechaActual."-prd-".$producto->id.".".$request-> imagen -> extension();
+                $request->file('imagen')->storeAs('public/productos', $imageName);
+                $producto -> imagen = $imageName;
+                $producto->save();
             }
-
-            $producto = Producto::create($data);
-
-            if ($producto->imagen) {
-                $producto->imagen = url('storage/' . $producto->imagen);
-            }
-
             return response()->json($producto, 201);
+
         } catch (ValidationException $e) {
             return response()->json([
                 'error' => 'ERROR AL crear un producto',
@@ -88,25 +84,29 @@ class ProductoController extends Controller
             ]);
 
             $producto = Producto::findOrFail($id);
-            $data = $request->all();
+            
+            $producto->fill([
+                'id_categoria' => $request -> id_categoria,
+                'nombre' =>  $request -> nombre,
+                'precio' =>  $request -> precio,
+                'stock' =>  $request -> stock,
+                'nombre_categoria' =>  $request -> nombre_categoria
+            ]);
 
             if ($request->hasFile('imagen')) {
                 // Eliminar la imagen anterior si existe
                 if ($producto->imagen) {
-                    Storage::disk('public')->delete($producto->imagen);
+                    Storage::delete('public/productos/'.$producto->imagen);
                 }
+
                 // Almacenar la nueva imagen
-                $path = $request->file('imagen')->store('images', 'public');
-                $data['imagen'] = $path;
+                $fechaActual = Carbon::now()->format("Y-m-d-H-i-s-u");
+                $imageName = $fechaActual."-prd-".$producto->id.".".$request-> imagen -> extension();
+                $request->file('imagen')->storeAs('public/productos', $imageName);
+                $producto -> imagen = $imageName;
             }
-
             // Actualizar el producto con los nuevos datos
-            $producto->update($data);
-
-            // Generar la URL completa de la imagen para la respuesta
-            if ($producto->imagen) {
-                $producto->imagen = url('storage/' . $producto->imagen);
-            }
+            $producto->save();
 
             return response()->json($producto, 200);
         } catch (ValidationException $e) {
