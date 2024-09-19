@@ -17,7 +17,8 @@ class ProductoController extends Controller
         try {
             $productos = Producto::all();
             return response()->json($productos);
-        } catch (Exception $e) {
+        }
+        catch (Exception $e) {
             return response()->json(["error" => "ERROR AL TRAER PRODUCTOS"], 400);
         }
     }
